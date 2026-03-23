@@ -1,21 +1,18 @@
-const path = require("path");
-const fs = require("fs");
 const mongoose = require("mongoose");
 const Invoice = require("../models/invoiceSchema");
-
-const deleteFile = (filePath) => {
-  if (!filePath) return;
-  const abs = path.join(__dirname, "../../", filePath);
-  if (fs.existsSync(abs)) fs.unlinkSync(abs);
-};
+const User = require("../models/userSchema");
+const generateInvoiceHTML = require("../utils/generateInvoiceHTML");
 
 exports.viewInvoice = async (req, res) => {
   try {
-    const invoice = await Invoice.findOne({ _id: req.params.id, user: req.user.id });
+    const invoice = await Invoice.findOne({ _id: req.params.id, user: req.user.id }).populate("product");
     if (!invoice) return res.status(404).json({ message: "Invoice not found" });
-    if (!invoice.htmlPath) return res.status(404).json({ message: "Invoice not available" });
 
-    return res.status(200).json({ url: `http://localhost:5000/${invoice.htmlPath}` });
+    const user = await User.findById(req.user.id).select("name email");
+    const html = await generateInvoiceHTML({ invoice, product: invoice.product, user });
+
+    res.setHeader("Content-Type", "text/html");
+    return res.send(html);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -27,8 +24,7 @@ exports.downloadInvoice = async (req, res) => {
     if (!invoice) return res.status(404).json({ message: "Invoice not found" });
     if (!invoice.pdfPath) return res.status(404).json({ message: "PDF not available" });
 
-    const absPath = path.join(__dirname, "../../", invoice.pdfPath);
-    res.download(absPath, `${invoice.invoiceId}.pdf`);
+    return res.redirect(invoice.pdfPath);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
