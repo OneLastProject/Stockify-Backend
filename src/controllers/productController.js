@@ -6,7 +6,7 @@ const User = require("../models/userSchema");
 const Statistics = require("../models/statisticsSchema");
 const generateInvoiceHTML = require("../utils/generateInvoiceHTML");
 const generateInvoicePDF = require("../utils/generatePDF");
-const uploadToDrive = require("../utils/googleDrive");
+const uploadToDrive = require("../utils/cloudinary");
 const { addProductSchema } = require("../validations/productValidation");
 
 exports.updateProductQuantity = async (req, res) => {
