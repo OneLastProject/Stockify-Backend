@@ -27,7 +27,8 @@ exports.updateProductQuantity = async (req, res) => {
       amount,
     });
 
-    const user = await User.findById(req.user.id).select("name email");
+    const user = { name: req.user.name, email: req.user.email };
+
     const [htmlContent, pdfBuffer] = await Promise.all([
       generateInvoiceHTML({ invoice, product, user }),
       generateInvoicePDF({ invoice, product, user }),

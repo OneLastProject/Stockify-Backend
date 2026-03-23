@@ -1,14 +1,14 @@
 const mongoose = require("mongoose");
 const Invoice = require("../models/invoiceSchema");
-const User = require("../models/userSchema");
 const generateInvoiceHTML = require("../utils/generateInvoiceHTML");
 
 exports.viewInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findOne({ _id: req.params.id, user: req.user.id }).populate("product");
     if (!invoice) return res.status(404).json({ message: "Invoice not found" });
+    if (!invoice.product) return res.status(404).json({ message: "Product no longer exists" });
 
-    const user = await User.findById(req.user.id).select("name email");
+    const user = { name: req.user.name, email: req.user.email };
     const html = await generateInvoiceHTML({ invoice, product: invoice.product, user });
 
     res.setHeader("Content-Type", "text/html");
@@ -49,9 +49,6 @@ exports.deleteInvoice = async (req, res) => {
   try {
     const invoice = await Invoice.findOneAndDelete({ _id: req.params.id, user: req.user.id });
     if (!invoice) return res.status(404).json({ message: "Invoice not found" });
-
-    deleteFile(invoice.htmlPath);
-    deleteFile(invoice.pdfPath);
 
     return res.status(200).json({ message: "Invoice deleted" });
   } catch (error) {

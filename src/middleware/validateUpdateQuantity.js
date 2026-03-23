@@ -1,9 +1,13 @@
-const fs = require("fs");
 const Product = require("../models/productSchema");
 const { updateQuantitySchema } = require("../validations/productValidation");
 
 const validateUpdateQuantity = async (req, res, next) => {
-  const product = await Product.findById(req.params.id);
+  let product;
+  try {
+    product = await Product.findById(req.params.id);
+  } catch {
+    return res.status(400).json({ message: "Invalid product ID" });
+  }
   if (!product) {
     return res.status(404).json({ message: "Product not found" });
   }
