@@ -22,12 +22,14 @@ const uploadToDrive = async ({ fileName, mimeType, buffer }) => {
       mimeType,
       body: Readable.from(buffer),
     },
+    supportsAllDrives: true,
     fields: "id",
   });
 
   await drive.permissions.create({
     fileId: file.data.id,
     requestBody: { role: "reader", type: "anyone" },
+    supportsAllDrives: true,
   });
 
   return `https://drive.google.com/uc?export=view&id=${file.data.id}`;
