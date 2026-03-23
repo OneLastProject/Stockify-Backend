@@ -1,14 +1,5 @@
-const fs = require("fs");
-const path = require("path");
-
 const generateInvoiceHTML = ({ invoice, product, user }) => {
-  return new Promise((resolve, reject) => {
-    const dir = path.join(__dirname, "../../uploads/invoices");
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-    const filename = `${invoice.invoiceId}.html`;
-    const filePath = path.join(dir, filename);
-
+  return new Promise((resolve) => {
     const formatDate = (d) =>
       new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
 
@@ -170,10 +161,7 @@ const generateInvoiceHTML = ({ invoice, product, user }) => {
 </body>
 </html>`;
 
-    fs.writeFile(filePath, html, (err) => {
-      if (err) return reject(err);
-      resolve(`uploads/invoices/${filename}`);
-    });
+    resolve(html);
   });
 };
 

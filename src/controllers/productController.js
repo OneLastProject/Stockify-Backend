@@ -6,11 +6,8 @@ const User = require("../models/userSchema");
 const Statistics = require("../models/statisticsSchema");
 const generateInvoiceHTML = require("../utils/generateInvoiceHTML");
 const generateInvoicePDF = require("../utils/generatePDF");
+const uploadToDrive = require("../utils/googleDrive");
 const { addProductSchema } = require("../validations/productValidation");
-
-const cleanupFile = (req) => {
-  if (req.file) fs.unlinkSync(req.file.path);
-};
 
 exports.updateProductQuantity = async (req, res) => {
   try {
@@ -31,12 +28,26 @@ exports.updateProductQuantity = async (req, res) => {
     });
 
     const user = await User.findById(req.user.id).select("name email");
-    const [htmlPath, pdfPath] = await Promise.all([
+    const [htmlContent, pdfBuffer] = await Promise.all([
       generateInvoiceHTML({ invoice, product, user }),
       generateInvoicePDF({ invoice, product, user }),
     ]);
-    invoice.htmlPath = htmlPath;
-    invoice.pdfPath = pdfPath;
+
+    const [htmlUrl, pdfUrl] = await Promise.all([
+      uploadToDrive({
+        fileName: `${invoice.invoiceId}.html`,
+        mimeType: "text/html",
+        buffer: Buffer.from(htmlContent, "utf8"),
+      }),
+      uploadToDrive({
+        fileName: `${invoice.invoiceId}.pdf`,
+        mimeType: "application/pdf",
+        buffer: pdfBuffer,
+      }),
+    ]);
+
+    invoice.htmlPath = htmlUrl;
+    invoice.pdfPath = pdfUrl;
     await invoice.save();
 
     await Statistics.create({
@@ -201,9 +212,14 @@ exports.addProduct = async (req, res) => {
 
     const existingProduct = await Product.findOne({ productId });
     if (existingProduct) {
-      cleanupFile(req);
       return res.status(400).json({ message: "Product with this ID already exists" });
     }
+
+    const imageUrl = await uploadToDrive({
+      fileName: `${Date.now()}-${req.file.originalname}`,
+      mimeType: req.file.mimetype,
+      buffer: req.file.buffer,
+    });
 
     const productData = {
       name,
@@ -215,11 +231,8 @@ exports.addProduct = async (req, res) => {
       expiryDate,
       thresholdValue: Number(thresholdValue),
       createdBy: req.user.id,
+      image: imageUrl,
     };
-
-    if (req.file) {
-      productData.image = req.file.path;
-    }
 
     const product = await Product.create(productData);
 

@@ -1,17 +1,11 @@
 const PDFDocument = require("pdfkit");
-const fs = require("fs");
-const path = require("path");
 
 const generateInvoicePDF = ({ invoice, product, user }) => {
   return new Promise((resolve, reject) => {
-    const dir = path.join(__dirname, "../../uploads/invoices");
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-
-    const filename = `${invoice.invoiceId}.pdf`;
-    const filePath = path.join(dir, filename);
     const doc = new PDFDocument({ size: "A4", margins: { top: 0, bottom: 0, left: 0, right: 0 } });
-    const stream = fs.createWriteStream(filePath);
-    doc.pipe(stream);
+    const chunks = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    doc.on("error", reject);
 
     const W = 495; // usable width (595 - 2*50)
     const formatDate = (d) =>
@@ -102,9 +96,8 @@ const generateInvoicePDF = ({ invoice, product, user }) => {
     doc.fillColor("#6b7280").fontSize(8)
       .text(`Generated on ${formatDate(new Date())}`, 50, 816, { align: "center", width: W });
 
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.end();
-    stream.on("finish", () => resolve(`uploads/invoices/${filename}`));
-    stream.on("error", reject);
   });
 };
 

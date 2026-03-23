@@ -2,18 +2,10 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// Image upload config
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/image");
-  },
-  filename: (req, file, cb) => {
-    const originalName = path.basename(file.originalname, path.extname(file.originalname));
-    cb(null, `${Date.now()}-${originalName}${path.extname(file.originalname)}`);
-  },
-});
+// Image upload config — memory storage, buffer uploaded to Google Drive
+const storage = multer.memoryStorage();
 
-const fileFilter = (req, file, cb) => {
+const fileFilter = (_req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|webp/;
   const isValid = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   if (isValid) {
@@ -28,8 +20,6 @@ const upload = multer({
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
 });
-
-fs.mkdirSync("uploads/image", { recursive: true });
 
 // CSV upload config
 fs.mkdirSync("uploads/csv", { recursive: true });
